@@ -1,5 +1,6 @@
 *.png
+!assets/**/*.png
 !old/**/*.png
-!new/**/*.png
 __pycache__/
 content-inventory.json
+dbg.png

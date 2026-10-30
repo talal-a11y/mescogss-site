@@ -3,8 +3,9 @@
 import os, html, json
 from content import SITE, NAV, SERVICES, TEAM, HOME, ABOUT, CONTACT, FOOTER
 
-OUT = os.path.join(os.path.dirname(__file__), 'new')
-IMG = '/assets/img/'
+OUT = os.path.dirname(os.path.abspath(__file__))
+R = '{R}'  # placeholder, replaced per page with './' or '../' so pages work at any base path
+IMG = R + 'assets/img/'
 e = html.escape
 
 # ---------- icons ----------
@@ -46,7 +47,7 @@ def head(title, desc, path):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="{R}assets/style.css">
 </head>
 <body>
 <div class="veil" aria-hidden="true"><div class="veil__panel"></div><div class="veil__mark"><span></span><span></span><span></span></div></div>
@@ -57,17 +58,17 @@ def header(path):
     for label, href in NAV:
         cur = ' is-current' if href == path or (href != '/' and path.startswith(href)) else ''
         if label == 'SERVICES':
-            tiles = ''.join(f'<a class="panel__item" href="/{s["slug"]}/"><img src="{IMG}{s["card"]}" alt="" loading="lazy"><span>{e(s["name_upper"])}</span></a>' for s in SERVICES)
-            links += f'<div class="nav__item nav__item--has-panel"><a class="nav__link{cur}" href="{href}">{label}<span class="plus">+</span></a><div class="panel"><div class="panel__grid">{tiles}</div></div></div>'
+            tiles = ''.join(f'<a class="panel__item" href="{R}{s["slug"]}/"><img src="{IMG}{s["card"]}" alt="" loading="lazy"><span>{e(s["name_upper"])}</span></a>' for s in SERVICES)
+            links += f'<div class="nav__item nav__item--has-panel"><a class="nav__link{cur}" href="{R}{href[1:]}">{label}<span class="plus">+</span></a><div class="panel"><div class="panel__grid">{tiles}</div></div></div>'
         elif label == 'CONTACT US':
-            links += f'<div class="nav__item"><a class="nav__link nav__link--cta" href="{href}">{label}</a></div>'
+            links += f'<div class="nav__item"><a class="nav__link nav__link--cta" href="{R}{href[1:]}">{label}</a></div>'
         else:
-            links += f'<div class="nav__item"><a class="nav__link{cur}" href="{href}">{label}</a></div>'
-    mobile_big = ''.join(f'<a class="big" href="{href}" style="transition-delay:{.15+i*.07:.2f}s">{e(l.title() if l!="HOME" else "Home")}</a>'.replace('Us<', 'us<') for i, (l, href) in enumerate(NAV))
-    mobile_sub = ''.join(f'<a href="/{s["slug"]}/">{e(s["name"])}</a>' for s in SERVICES)
+            links += f'<div class="nav__item"><a class="nav__link{cur}" href="{R}{href[1:]}">{label}</a></div>'
+    mobile_big = ''.join(f'<a class="big" href="{R}{href[1:]}" style="transition-delay:{.15+i*.07:.2f}s">{e(l.title() if l!="HOME" else "Home")}</a>'.replace('Us<', 'us<') for i, (l, href) in enumerate(NAV))
+    mobile_sub = ''.join(f'<a href="{R}{s["slug"]}/">{e(s["name"])}</a>' for s in SERVICES)
     return f'''<header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="MESCO GSS — home"><img src="{IMG}MESCO-GSS.png" alt="MESCO GSS" width="1400" height="245"></a>
+    <a class="brand" href="{R}" aria-label="MESCO GSS — home"><img src="{IMG}MESCO-GSS.png" alt="MESCO GSS" width="1400" height="245"></a>
     <nav class="nav" aria-label="Primary">
       <a class="nav__email" href="mailto:{SITE['email']}">{I['mail']}{SITE['email']}</a>
       {links}
@@ -82,8 +83,8 @@ def header(path):
 '''
 
 def footer(path):
-    quick = ''.join(f'<li><a href="{href}"{" class=\"is-current\"" if href==path else ""}>{e(l.capitalize() if l!="HOME" else "Home")}</a></li>'.replace('About us','About us').replace('Our team','Our Team') for l, href in NAV)
-    svcs = ''.join(f'<li><a href="/{s["slug"]}/"{" class=\"is-current\"" if path=="/"+s["slug"]+"/" else ""}>{e(s["name"])}</a></li>' for s in SERVICES)
+    quick = ''.join(f'<li><a href="{R}{href[1:]}"{" class=\"is-current\"" if href==path else ""}>{e(l.capitalize() if l!="HOME" else "Home")}</a></li>'.replace('About us','About us').replace('Our team','Our Team') for l, href in NAV)
+    svcs = ''.join(f'<li><a href="{R}{s["slug"]}/"{" class=\"is-current\"" if path=="/"+s["slug"]+"/" else ""}>{e(s["name"])}</a></li>' for s in SERVICES)
     return f'''<footer class="footer">
   <div class="wrap">
     <div class="footer__grid">
@@ -99,7 +100,7 @@ def footer(path):
     <div class="footer__bottom"><span>MESCO GSS</span><span>Dubai, United Arab Emirates</span></div>
   </div>
 </footer>
-<script src="/assets/main.js" defer></script>
+<script src="{R}assets/main.js" defer></script>
 </body>
 </html>
 '''
@@ -138,7 +139,7 @@ def contact_band():
       <h2 class="h-l">{e(c['title'])}</h2>
       <p class="lede">{e(c['text'])}</p>
       <a class="contact-line" href="mailto:{SITE['email']}"><i>{I['mail']}</i>{SITE['email']}</a><br>
-      <a class="btn" href="/contact-us/">{c['cta']} {I['arrow']}</a>
+      <a class="btn" href="{R}contact-us/">{c['cta']} {I['arrow']}</a>
     </div>
   </div>
 </section>
@@ -147,7 +148,7 @@ def contact_band():
 # ---------- HOME ----------
 def home():
     a, s, t, w, c, q, cn = HOME['about'], HOME['services'], HOME['team'], HOME['why'], HOME['contact'], HOME['partners'], HOME['counters']
-    svc_items = ''.join(f'<li class="svc__item" data-name="{e(sv["name_upper"])}"><a href="/{sv["slug"]}/"><img class="svc__bg" src="{IMG}{sv["card"]}" alt="" loading="lazy" hidden><span class="svc__name">{e(sv["name_upper"])}</span><span class="svc__more">{s["cta"]} {I["arrow"]}</span></a></li>' for sv in SERVICES)
+    svc_items = ''.join(f'<li class="svc__item" data-name="{e(sv["name_upper"])}"><a href="{R}{sv["slug"]}/"><img class="svc__bg" src="{IMG}{sv["card"]}" alt="" loading="lazy" hidden><span class="svc__name">{e(sv["name_upper"])}</span><span class="svc__more">{s["cta"]} {I["arrow"]}</span></a></li>' for sv in SERVICES)
     svc_imgs = ''.join(f'<img src="{IMG}{sv["card"]}" alt="">' for sv in SERVICES)
     counters = ''.join(f'<div class="counter"><b><span data-count="{n}">0</span><em>{u}</em></b><span>{e(l)}</span></div>' for n, u, l in cn['items'])
     why = ''.join(f'<div class="why__item"><i></i><h3>{e(h)}</h3><p>{e(p)}</p></div>' for h, p in w['items'])
@@ -161,7 +162,7 @@ def home():
     <p class="hero__eyebrow" data-reveal="fade">{HOME['eyebrow']}</p>
     <h1 class="hero__title">{e(SITE['tagline'])}</h1>
     <div class="hero__row">
-      <a class="btn" href="/services/" data-reveal>{HOME['hero_cta']} {I['arrow']}</a>
+      <a class="btn" href="{R}services/" data-reveal>{HOME['hero_cta']} {I['arrow']}</a>
       <div class="hero__cue" data-reveal="fade"><i></i><span>Scroll</span></div>
     </div>
   </div>
@@ -177,7 +178,7 @@ def home():
       <p class="eyebrow">{a['eyebrow']}</p>
       <h2 class="h-l">{e(a['title'])}</h2>
       <p class="lede">{e(a['text'])}</p>
-      <a class="btn" href="/about-us/">{a['cta']} {I['arrow']}</a>
+      <a class="btn" href="{R}about-us/">{a['cta']} {I['arrow']}</a>
     </div>
   </div>
 </section>
@@ -195,7 +196,7 @@ def home():
 <section class="video">
   <div class="video__frame">
     <img src="{IMG}video.jpg" alt="" loading="lazy">
-    <video src="/assets/video/jebel-ali.mp4" playsinline preload="none" controls></video>
+    <video src="{R}assets/video/jebel-ali.mp4" playsinline preload="none" controls></video>
     <button class="video__play" aria-label="Play video">{I['play']}</button>
   </div>
 </section>
@@ -204,7 +205,7 @@ def home():
   <div class="wrap svc">
     <div class="svc__head" data-reveal>
       <div><p class="eyebrow">{s['eyebrow']}</p><h2 class="h-l">{e(s['title'])}</h2></div>
-      <a class="link-arrow" href="/services/">All services {I['arrow']}</a>
+      <a class="link-arrow" href="{R}services/">All services {I['arrow']}</a>
     </div>
     <ul class="svc__list stagger">{svc_items}</ul>
     <div class="svc__stage" aria-hidden="true">{svc_imgs}<span></span></div>
@@ -218,7 +219,7 @@ def home():
       <h2 class="h-l">{e(w['title'])}</h2>
     </div>
     <div class="why stagger">{why}</div>
-    <div class="why__cta" data-reveal><a class="btn" href="/contact-us/">{e(w['cta'])} {I['arrow']}</a></div>
+    <div class="why__cta" data-reveal><a class="btn" href="{R}contact-us/">{e(w['cta'])} {I['arrow']}</a></div>
   </div>
 </section>
 
@@ -229,7 +230,7 @@ def home():
       <div class="team-nav"><button type="button" data-dir="prev" aria-label="Previous">{I['chev-l']}</button><button type="button" data-dir="next" aria-label="Next">{I['chev-r']}</button></div>
     </div>
     <div class="strip stagger">{team}</div>
-    <div class="why__cta" data-reveal><a class="btn" href="/contact-us/">{t['cta']} {I['arrow']}</a></div>
+    <div class="why__cta" data-reveal><a class="btn" href="{R}contact-us/">{t['cta']} {I['arrow']}</a></div>
   </div>
 </section>
 
@@ -278,7 +279,7 @@ def about():
 # ---------- SERVICES ----------
 def services():
     s = HOME['services']
-    cards = ''.join(f'<a class="svc-card" href="/{sv["slug"]}/"><span class="svc-card__bar"></span><img src="{IMG}{sv["card"]}" alt="" loading="lazy"><div class="svc-card__body"><h3>{e(sv["name_upper"])}</h3><span class="link-arrow">{s["cta"]} {I["arrow"]}</span></div></a>' for sv in SERVICES)
+    cards = ''.join(f'<a class="svc-card" href="{R}{sv["slug"]}/"><span class="svc-card__bar"></span><img src="{IMG}{sv["card"]}" alt="" loading="lazy"><div class="svc-card__body"><h3>{e(sv["name_upper"])}</h3><span class="link-arrow">{s["cta"]} {I["arrow"]}</span></div></a>' for sv in SERVICES)
     body = page_head('Services', 'hero.jpg', 'Services') + f'''
 <section class="section">
   <div class="wrap">
@@ -298,7 +299,7 @@ def team():
   <div class="wrap">
     <div data-reveal style="margin-bottom:44px"><p class="eyebrow">{t['eyebrow']}</p><h2 class="h-l">{e(t['title'])}</h2></div>
     <div class="team-grid stagger">{cards}</div>
-    <div class="why__cta" data-reveal><a class="btn" href="/contact-us/">{t['cta']} {I['arrow']}</a></div>
+    <div class="why__cta" data-reveal><a class="btn" href="{R}contact-us/">{t['cta']} {I['arrow']}</a></div>
   </div>
 </section>
 ''' + contact_band()
@@ -337,7 +338,7 @@ def contact():
 # ---------- SERVICE DETAIL ----------
 def service(sv):
     pts = ''.join(f'<li class="point"><i></i><p>{e(p)}</p></li>' for p in sv['points'])
-    others = ''.join(f'<a href="/{o["slug"]}/"><img src="{IMG}{o["card"]}" alt="" loading="lazy"><span>{e(o["name_upper"])}</span></a>' for o in SERVICES if o['slug'] != sv['slug'])
+    others = ''.join(f'<a href="{R}{o["slug"]}/"><img src="{IMG}{o["card"]}" alt="" loading="lazy"><span>{e(o["name_upper"])}</span></a>' for o in SERVICES if o['slug'] != sv['slug'])
     body = page_head(sv['name'], sv['header'], 'Services') + f'''
 <section class="section">
   <div class="wrap">
@@ -352,7 +353,7 @@ def service(sv):
     <ul class="points stagger">{pts}</ul>
     <div class="svc-outro" data-reveal>
       <p>{e(sv['outro'])}</p>
-      <a class="btn" href="/contact-us/">CONTACT US {I['arrow']}</a>
+      <a class="btn" href="{R}contact-us/">CONTACT US {I['arrow']}</a>
     </div>
   </div>
 </section>
@@ -370,7 +371,8 @@ def service(sv):
 def write(path, content):
     full = os.path.join(OUT, path.strip('/'), 'index.html') if path != '/' else os.path.join(OUT, 'index.html')
     os.makedirs(os.path.dirname(full), exist_ok=True)
-    open(full, 'w').write(content)
+    rel = './' if path == '/' else '../'
+    open(full, 'w').write(content.replace('{R}', rel))
 
 write('/', home()); write('/about-us/', about()); write('/services/', services()); write('/our-team/', team()); write('/contact-us/', contact())
 for sv in SERVICES: write(f'/{sv["slug"]}/', service(sv))
