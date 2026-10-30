@@ -3,92 +3,113 @@
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const root = document.documentElement;
 
-  /* ---------- page veil: in on load, out on internal navigation ---------- */
+  /* ---------- page veil ----------
+     Leaving: two panels sweep up (red, then navy) and the mark fades in; we navigate under cover.
+     Arriving: the <head> script already stamped html.veil-cover, so the new page paints *under* the
+     veil from its first frame. Once fonts and the hero image are ready, the panels sweep up and away
+     while the hero reveals underneath. No white flash, no half-rendered frame. */
   const veil = $('.veil');
-  const cameFromInside = sessionStorage.getItem('mgss-veil') === '1';
-  sessionStorage.removeItem('mgss-veil');
+  const panels = $$('.veil__panel');
+  const mark = $('.veil__mark');
+  const arriving = root.classList.contains('veil-cover');
+  try { sessionStorage.removeItem('mgss-veil'); } catch (e) {}
 
+  const OUT_MS = 900;
   function veilOut() {
-    if (!veil || reduce) return;
-    veil.classList.add('is-in', 'is-active');
-    veil.style.transition = 'none';
-    veil.style.transform = 'none';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      veil.style.transition = 'transform .9s cubic-bezier(.76,0,.24,1)';
-      veil.style.transform = 'translateY(-100%)';
-      setTimeout(() => { veil.classList.remove('is-in', 'is-active'); veil.style.transition = ''; veil.style.transform = ''; }, 950);
-    }));
+    if (!veil) return;
+    if (reduce) { root.classList.remove('veil-cover'); return; }
+    veil.classList.add('is-active');
+    if (mark) { mark.style.transition = 'opacity .25s ease, transform .4s cubic-bezier(.22,1,.36,1)'; mark.style.opacity = '0'; mark.style.transform = 'scale(1.1)'; }
+    panels.forEach((p, i) => {
+      p.style.transition = `transform ${OUT_MS}ms cubic-bezier(.76,0,.24,1) ${i === 0 ? 120 : 0}ms`;
+      p.style.transform = 'translateY(-100%)';
+    });
+    setTimeout(() => {
+      root.classList.remove('veil-cover');
+      veil.classList.remove('is-active');
+      panels.forEach((p) => { p.style.transition = 'none'; p.style.transform = ''; });
+      if (mark) { mark.style.transition = 'none'; mark.style.opacity = ''; mark.style.transform = ''; }
+      requestAnimationFrame(() => panels.forEach((p) => { p.style.transition = ''; }));
+    }, OUT_MS + 160);
   }
 
+  const IN_MS = 640;
   function veilIn(href) {
     if (!veil || reduce) { location.href = href; return; }
-    const mark = $('.veil__mark');
     veil.classList.add('is-active');
-    veil.style.transition = 'transform .7s cubic-bezier(.76,0,.24,1)';
-    veil.style.transform = 'translateY(0)';
-    if (mark) { mark.style.transition = 'opacity .3s .35s'; mark.style.opacity = '1'; }
-    sessionStorage.setItem('mgss-veil', '1');
-    setTimeout(() => { location.href = href; }, 720);
+    panels.forEach((p, i) => {
+      p.style.transition = `transform ${IN_MS}ms cubic-bezier(.76,0,.24,1) ${i === 0 ? 0 : 90}ms`;
+      p.style.transform = 'translateY(0)';
+    });
+    if (mark) { mark.style.transition = 'opacity .3s ease .42s, transform .5s cubic-bezier(.22,1,.36,1) .42s'; mark.style.opacity = '1'; mark.style.transform = 'none'; }
+    try { sessionStorage.setItem('mgss-veil', '1'); } catch (e) {}
+    setTimeout(() => { location.href = href; }, IN_MS + 140);
+  }
+
+  function internal(a) {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || a.target === '_blank' || a.hasAttribute('download')) return null;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return null;
+    if (url.pathname === location.pathname) return null;
+    return url;
   }
 
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a');
-    if (!a) return;
-    const href = a.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || a.target === '_blank' || a.hasAttribute('download')) return;
-    const url = new URL(a.href, location.href);
-    if (url.origin !== location.origin) return;
-    if (url.pathname === location.pathname && url.hash) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    const url = internal(a);
+    if (!url) return;
     e.preventDefault();
     document.body.classList.remove('menu-open');
+    root.style.overflow = '';
     veilIn(url.href);
   });
 
-  window.addEventListener('pageshow', (e) => { if (e.persisted) { veil && veil.classList.remove('is-active', 'is-in'); } });
+  // warm the next page while the pointer is still on the link
+  const prefetched = new Set();
+  document.addEventListener('pointerover', (e) => {
+    const a = e.target.closest && e.target.closest('a');
+    if (!a) return;
+    const url = internal(a);
+    if (!url || prefetched.has(url.href)) return;
+    prefetched.add(url.href);
+    const l = document.createElement('link'); l.rel = 'prefetch'; l.href = url.href; l.as = 'document'; document.head.appendChild(l);
+  }, { passive: true });
+
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) { root.classList.remove('veil-cover'); veil && veil.classList.remove('is-active'); panels.forEach((p) => { p.style.transform = ''; }); }
+  });
 
   /* ---------- header state ---------- */
   const header = $('.site-header');
+  if ($('.profile')) document.body.classList.add('has-profile');
   const onScroll = () => header && header.classList.toggle('is-solid', window.scrollY > 40);
   onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
 
-  // services panel (desktop)
-  const panelItem = $('.nav__item--has-panel');
-  if (panelItem && header) {
-    let t;
-    panelItem.addEventListener('mouseenter', () => { clearTimeout(t); header.classList.add('is-open'); });
-    panelItem.addEventListener('mouseleave', () => { t = setTimeout(() => header.classList.remove('is-open'), 180); });
-    panelItem.querySelector('.nav__link').addEventListener('focus', () => header.classList.add('is-open'));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') header.classList.remove('is-open'); });
-  }
-
-  // mobile menu
   const burger = $('.burger');
   if (burger) {
     burger.addEventListener('click', () => {
       const open = document.body.classList.toggle('menu-open');
       burger.setAttribute('aria-expanded', String(open));
-      document.documentElement.style.overflow = open ? 'hidden' : '';
+      root.style.overflow = open ? 'hidden' : '';
     });
   }
 
   /* ---------- hero intro ---------- */
   function splitLines(el) {
-    // Wrap each visual line in a mask so lines can rise independently.
-    const text = el.textContent.trim();
-    const words = text.split(/\s+/);
+    const words = el.textContent.trim().split(/\s+/);
     el.textContent = '';
     const probe = document.createElement('span');
-    probe.style.cssText = 'display:inline';
     el.appendChild(probe);
-    const lines = []; let current = [];
-    let lastTop = null;
+    const lines = []; let current = []; let lastH = null;
     words.forEach((w) => {
-      probe.textContent = (current.concat(w)).join(' ');
-      const top = probe.getBoundingClientRect().height;
-      if (lastTop !== null && top > lastTop && current.length) { lines.push(current.join(' ')); current = [w]; probe.textContent = w; lastTop = probe.getBoundingClientRect().height; }
-      else { current.push(w); lastTop = top; }
+      probe.textContent = current.concat(w).join(' ');
+      const h = probe.getBoundingClientRect().height;
+      if (lastH !== null && h > lastH && current.length) { lines.push(current.join(' ')); current = [w]; probe.textContent = w; lastH = probe.getBoundingClientRect().height; }
+      else { current.push(w); lastH = h; }
     });
     if (current.length) lines.push(current.join(' '));
     el.textContent = '';
@@ -96,27 +117,21 @@
     return $$('.line > span', el);
   }
 
-  function introHero() {
+  function introHero(delay) {
     const title = $('.hero__title') || $('.page-head h1');
-    if (!title) return;
-    const spans = splitLines(title);
-    const delay = cameFromInside ? 700 : 250;
-    const cue = $('.hero__diamonds path');
-    spans.forEach((s, i) => {
-      if (reduce) { s.style.transform = 'none'; return; }
-      s.style.transition = 'transform 1.1s cubic-bezier(.22,1,.36,1)';
-      setTimeout(() => { s.style.transform = 'translateY(0)'; }, delay + i * 110);
-    });
     const media = $('.hero__media img') || $('.page-head__media img');
-    if (media && !reduce) {
-      media.style.transition = 'transform 2.6s cubic-bezier(.22,1,.36,1)';
-      setTimeout(() => { media.style.transform = 'scale(1)'; }, delay - 100);
+    const cue = $('.hero__diamonds path');
+    if (title) {
+      const spans = splitLines(title);
+      spans.forEach((s, i) => {
+        if (reduce) { s.style.transform = 'none'; return; }
+        s.style.transition = 'transform 1.1s cubic-bezier(.22,1,.36,1)';
+        setTimeout(() => { s.style.transform = 'translateY(0)'; }, delay + i * 110);
+      });
     }
-    if (cue && !reduce) {
-      cue.style.transition = 'stroke-dashoffset 3.2s cubic-bezier(.22,1,.36,1)';
-      setTimeout(() => { cue.style.strokeDashoffset = '0'; }, delay + 300);
-    }
-    $$('.hero [data-reveal], .page-head [data-reveal]').forEach((el, i) => setTimeout(() => el.classList.add('is-in'), delay + 350 + i * 120));
+    if (media && !reduce) { media.style.transition = 'transform 2.6s cubic-bezier(.22,1,.36,1)'; setTimeout(() => { media.style.transform = 'scale(1)'; }, Math.max(0, delay - 150)); }
+    if (cue && !reduce) { cue.style.transition = 'stroke-dashoffset 3.2s cubic-bezier(.22,1,.36,1)'; setTimeout(() => { cue.style.strokeDashoffset = '0'; }, delay + 300); }
+    $$('.hero [data-reveal], .page-head [data-reveal], .profile [data-reveal]').forEach((el, i) => setTimeout(() => el.classList.add('is-in'), delay + 350 + i * 120));
   }
 
   /* ---------- scroll reveals ---------- */
@@ -128,20 +143,15 @@
       if (en.target.hasAttribute('data-count')) countUp(en.target);
       io.unobserve(en.target);
     });
-  }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
-  $$('[data-reveal]:not(.hero [data-reveal]):not(.page-head [data-reveal]), .stagger, [data-count]').forEach((el) => io.observe(el));
-  // clip-path'd images report a zero intersection area, so watch their host instead
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.06 });
+  $$('[data-reveal]:not(.hero [data-reveal]):not(.page-head [data-reveal]):not(.profile [data-reveal]), .stagger, [data-count]').forEach((el) => io.observe(el));
   $$('.mask-img').forEach((m) => { const host = m.parentElement; host.dataset.maskHost = '1'; io.observe(host); });
 
   function countUp(el) {
     const target = parseFloat(el.getAttribute('data-count'));
     if (reduce || isNaN(target)) { el.textContent = el.getAttribute('data-count'); return; }
     const dur = 1400, start = performance.now();
-    const step = (now) => {
-      const p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(target * e);
-      if (p < 1) requestAnimationFrame(step);
-    };
+    const step = (now) => { const p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(target * e); if (p < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   }
 
@@ -158,19 +168,6 @@
       });
     };
     window.addEventListener('scroll', tick, { passive: true }); tick();
-  }
-
-  /* ---------- services hover stage ---------- */
-  const svc = $('.svc');
-  if (svc) {
-    const items = $$('.svc__item', svc), imgs = $$('.svc__stage img', svc), label = $('.svc__stage span', svc);
-    const activate = (i) => {
-      items.forEach((it, k) => it.classList.toggle('is-active', k === i));
-      imgs.forEach((im, k) => im.classList.toggle('is-active', k === i));
-      if (label) label.textContent = items[i].dataset.name;
-    };
-    items.forEach((it, i) => { it.addEventListener('mouseenter', () => activate(i)); it.addEventListener('focusin', () => activate(i)); });
-    activate(0);
   }
 
   /* ---------- team strip: drag + arrows ---------- */
@@ -216,8 +213,16 @@
   }
 
   /* ---------- boot ---------- */
-  window.addEventListener('load', () => {
-    if (cameFromInside) veilOut();
-    introHero();
+  function ready() {
+    // wait for fonts + the hero image so the reveal happens on a finished frame
+    const hero = $('.hero__media img') || $('.page-head__media img') || $('.profile__media img');
+    const waits = [document.fonts ? document.fonts.ready : Promise.resolve()];
+    if (hero && !hero.complete) waits.push(new Promise((r) => { hero.addEventListener('load', r, { once: true }); hero.addEventListener('error', r, { once: true }); }));
+    const timeout = new Promise((r) => setTimeout(r, 1200));
+    return Promise.race([Promise.all(waits), timeout]);
+  }
+  ready().then(() => {
+    if (arriving) { veilOut(); introHero(260); }
+    else introHero(200);
   });
 })();

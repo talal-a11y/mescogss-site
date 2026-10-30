@@ -6,9 +6,9 @@ SITE = {
     "address": "Office 201, Business Point Building, Port Saeed Street, Deira",
     "tagline": "PROTECTING YOU TODAY, PREPARING YOU FOR TOMORROW.",
     "socials": [
-        ("Facebook", "https://facebook.com"),
-        ("Instagram", "https://instagram.com"),
-        ("YouTube", "https://youtube.com"),
+        ("LinkedIn", "https://www.linkedin.com/"),           # placeholder until the company page URL is confirmed
+        ("Email", "mailto:info@mescogss.com"),
+        ("WhatsApp", "https://wa.me/971565700222"),         # Dina Almahmoud's number, as on the coming-soon page
     ],
 }
 
@@ -119,22 +119,24 @@ SERVICES = [
     },
 ]
 
+BIO_PLACEHOLDER = "[Short description about this team member — to be written.]"
+
 TEAM = [
-    {"name": "Dina Almahmoud", "role": "Partner – Producing Broker", "img": "Dina-.jpg",
+    {"slug": "dina-almahmoud", "division": "Management", "name": "Dina Almahmoud", "role": "Partner – Producing Broker", "img": "Dina-.jpg",
      "links": [("tel", "+971565700222"), ("mail", "Dina@mescogss.com")]},
-    {"name": "Zuha Almahmoud", "role": "Partner – Producing Broker", "img": "zuha.jpg",
+    {"slug": "zuha-almahmoud", "division": "Management", "name": "Zuha Almahmoud", "role": "Partner – Producing Broker", "img": "zuha.jpg",
      "links": [("tel", "+971585304900"), ("tel", "+971566768258"), ("mail", "zuha@mescogss.com")]},
-    {"name": "Alaa Elsabbagh", "role": "Managing Director", "img": "alaa.jpg",
+    {"slug": "alaa-elsabbagh", "division": "Management", "name": "Alaa Elsabbagh", "role": "Managing Director", "img": "alaa.jpg",
      "links": [("tel", "+971585652046"), ("wa", "201222347905"), ("mail", "alaa.sabbagh@mescoalex.com")]},
-    {"name": "Ahmed Mady", "role": "Claims Executive", "img": "Ahmad.jpg",
+    {"slug": "ahmed-mady", "division": "Management", "name": "Ahmed Mady", "role": "Claims Executive", "img": "Ahmad.jpg",
      "links": [("tel", "+201020009949"), ("mail", "ahmed.mady@mescoalex.com")]},
-    {"name": "Hatem Gouda", "role": "Account Manager", "img": "hatem.jpg",
+    {"slug": "hatem-gouda", "division": "Management", "name": "Hatem Gouda", "role": "Account Manager", "img": "hatem.jpg",
      "links": [("tel", "+201228916261"), ("mail", "hatem.gouda@mescoalex.com")]},
-    {"name": "Dina Hanafi", "role": "Producing Broker", "img": "dina-hanafi.jpg",
+    {"slug": "dina-hanafi", "division": "Management", "name": "Dina Hanafi", "role": "Producing Broker", "img": "dina-hanafi.jpg",
      "links": [("tel", "+201060641607"), ("mail", "dina.hanafi@mescoalex.com")]},
-    {"name": "Ingie Amr", "role": "Entry & Administration", "img": "ingie.jpg",
+    {"slug": "ingie-amr", "division": "Management", "name": "Ingie Amr", "role": "Entry & Administration", "img": "ingie.jpg",
      "links": [("tel", "+201553811534"), ("mail", "ingie.amr@mescoalex.com")]},
-    {"name": "Souaad Bekhtaoui", "role": "Deputy Managing Director", "img": "Souaad.jpg",
+    {"slug": "souaad-bekhtaoui", "division": "Management", "name": "Souaad Bekhtaoui", "role": "Deputy Managing Director", "img": "Souaad.jpg",
      "links": [("tel", "+971526807741"), ("mail", "souaad@mescogss.com")]},
 ]
 
@@ -178,6 +180,9 @@ HOME = {
 
 ABOUT = {
     "title": "About us",
+    "origins_title": "Two companies behind MESCO-GSS",
+    "origins_cards": [("GSS", "1976"), ("MESCO", "1960")],   # names and years as they appear in the paragraphs
+    "venture_title": "The joint venture: MESCO-GSS DUBAI",
     "block1": [
         "GSS began its journey in 1976 as a family-owned business focused on ship ownership. Over the years, we evolved into a leader in technical management and maritime supplies, using our experience to understand the unique needs of the shipping industry. With a strong network of clients in the Middle East and an impressive portfolio of international partnerships, GSS has built a reputation for reliability, quality, and service excellence.",
         "On the other side of the map, MESCO, established in 1960, was carving out a name in insurance brokerage. Now managed by its second generation, MESCO is renowned for delivering exceptional service and support to the shipping and insurance markets. With specialized departments and a highly trained team, MESCO has become the preferred partner for P&I Clubs, offering unmatched expertise in P&I correspondence and insurance solutions.",
